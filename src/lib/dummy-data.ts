@@ -263,6 +263,10 @@ export function getClientById(id: string): Client | undefined {
   return dummyClients.find(client => client.id === id);
 }
 
+export function getProjectById(id: string): Project | undefined {
+  return dummyProjects.find(project => project.id === id);
+}
+
 export function getProjectsByClientId(clientId: string): Project[] {
   return dummyProjects.filter(project => project.client_id === clientId);
 }
