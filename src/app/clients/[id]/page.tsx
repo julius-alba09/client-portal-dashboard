@@ -6,6 +6,7 @@ import Layout from '@/components/layout/Layout';
 import TableView from '@/components/tasks/TableView';
 import KanbanView from '@/components/tasks/KanbanView';
 import CalendarView from '@/components/tasks/CalendarView';
+import DatabaseBreadcrumb, { createBreadcrumbWithDatabase, defaultDatabaseSources } from '@/components/navigation/DatabaseBreadcrumb';
 import { AuthGuard, useAuth } from '@/contexts/AuthContext';
 import { 
   getClientById, 
@@ -18,7 +19,8 @@ import {
   RectangleStackIcon, 
   CalendarIcon,
   ChartBarIcon,
-  PlusIcon
+  PlusIcon,
+  CircleStackIcon
 } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 
@@ -121,9 +123,52 @@ function ClientDashboardPage() {
     }
   };
 
+  // Create breadcrumbs with database information
+  const breadcrumbItems = createBreadcrumbWithDatabase([
+    { label: 'Dashboard', href: '/' },
+    { label: 'Clients', href: '/clients' },
+    { label: client.name, current: true }
+  ], defaultDatabaseSources);
+
   return (
     <Layout client={client}>
       <div className="space-y-8">
+        {/* Breadcrumbs with Database Info */}
+        <DatabaseBreadcrumb items={breadcrumbItems} />
+        
+        {/* Database Connection Status */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-800 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+              <CircleStackIcon className="w-5 h-5 mr-2" />
+              Connected Databases
+            </h3>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Last synced: Just now
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {defaultDatabaseSources.map(db => (
+              <div key={db.id} className="flex items-center p-4 border border-gray-100 dark:border-gray-700 rounded-xl">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">{db.source === 'notion' ? '🗃️' : '📋'}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {db.name}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">
+                        {db.type} • {db.status}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>

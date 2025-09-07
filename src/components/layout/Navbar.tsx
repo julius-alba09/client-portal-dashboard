@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bars3Icon, BellIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { Client } from '@/types';
+import SearchBox from '@/components/search/SearchBox';
 
 interface NavbarProps {
   onMenuClick: () => void;
@@ -50,16 +51,7 @@ export default function Navbar({ onMenuClick, client, projectName }: NavbarProps
 
       {/* Center section - Search */}
       <div className="hidden md:flex flex-1 max-w-xl mx-8">
-        <div className="relative w-full">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            className="block w-full pl-11 pr-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white dark:focus:bg-gray-800 text-sm transition-all"
-            placeholder="Search tasks, projects, or clients..."
-          />
-        </div>
+        <SearchBox className="w-full" />
       </div>
 
       {/* Right section - Actions */}
