@@ -1,0 +1,372 @@
+import { Client as NotionClient } from '@notionhq/client';
+import { Client, Project, Task } from '@/types';
+
+// Initialize Notion client (conditionally)
+const notion = process.env.NOTION_TOKEN ? new NotionClient({
+  auth: process.env.NOTION_TOKEN,
+}) : null;
+
+// Database IDs (these should be configured in environment variables)
+const CLIENTS_DATABASE_ID = process.env.NOTION_CLIENTS_DB_ID || '';
+const PROJECTS_DATABASE_ID = process.env.NOTION_PROJECTS_DB_ID || '';
+const TASKS_DATABASE_ID = process.env.NOTION_TASKS_DB_ID || '';
+
+/**
+ * Helper function to extract text from Notion rich text property
+ */
+function extractText(richText: any[]): string {
+  return richText?.map(rt => rt.plain_text).join('') || '';
+}
+
+/**
+ * Helper function to extract date from Notion date property
+ */
+function extractDate(dateProperty: any): Date | undefined {
+  if (!dateProperty?.date?.start) return undefined;
+  return new Date(dateProperty.date.start);
+}
+
+/**
+ * Helper function to extract select value from Notion select property
+ */
+function extractSelect(selectProperty: any): string {
+  return selectProperty?.select?.name || '';
+}
+
+/**
+ * Helper function to extract multi-select values from Notion multi-select property
+ */
+function extractMultiSelect(multiSelectProperty: any): string[] {
+  return multiSelectProperty?.multi_select?.map((item: any) => item.name) || [];
+}
+
+/**
+ * Helper function to extract number from Notion number property
+ */
+function extractNumber(numberProperty: any): number | undefined {
+  return numberProperty?.number || undefined;
+}
+
+/**
+ * Helper function to extract email from Notion email property
+ */
+function extractEmail(emailProperty: any): string {
+  return emailProperty?.email || '';
+}
+
+/**
+ * Fetch all clients from Notion
+ */
+export async function fetchClients(): Promise<Client[]> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const response = await notion.databases.query({
+      database_id: CLIENTS_DATABASE_ID,
+      sorts: [
+        {
+          property: 'Name',
+          direction: 'ascending',
+        },
+      ],
+    });
+
+    return response.results.map((page: any) => {
+      const props = page.properties;
+      return {
+        id: page.id,
+        notion_id: page.id,
+        name: extractText(props.Name?.title || []),
+        email: extractEmail(props.Email),
+        company: extractText(props.Company?.rich_text || []),
+        status: extractSelect(props.Status)?.toLowerCase() as Client['status'] || 'active',
+        avatar: props.Avatar?.files?.[0]?.file?.url || undefined,
+        createdAt: new Date(page.created_time),
+        updatedAt: new Date(page.last_edited_time),
+      } as Client;
+    });
+  } catch (error) {
+    console.error('Error fetching clients from Notion:', error);
+    throw new Error('Failed to fetch clients from Notion');
+  }
+}
+
+/**
+ * Fetch a specific client by ID from Notion
+ */
+export async function fetchClient(id: string): Promise<Client | null> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const page = await notion.pages.retrieve({ page_id: id });
+    if (!('properties' in page)) return null;
+
+    const props = page.properties;
+    return {
+      id: page.id,
+      notion_id: page.id,
+      name: extractText(props.Name?.title || []),
+      email: extractEmail(props.Email),
+      company: extractText(props.Company?.rich_text || []),
+      status: extractSelect(props.Status)?.toLowerCase() as Client['status'] || 'active',
+      avatar: props.Avatar?.files?.[0]?.file?.url || undefined,
+      createdAt: new Date(page.created_time),
+      updatedAt: new Date(page.last_edited_time),
+    } as Client;
+  } catch (error) {
+    console.error('Error fetching client from Notion:', error);
+    return null;
+  }
+}
+
+/**
+ * Fetch projects for a specific client from Notion
+ */
+export async function fetchProjectsByClient(clientId: string): Promise<Project[]> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const response = await notion.databases.query({
+      database_id: PROJECTS_DATABASE_ID,
+      filter: {
+        property: 'Client',
+        relation: {
+          contains: clientId,
+        },
+      },
+      sorts: [
+        {
+          property: 'Name',
+          direction: 'ascending',
+        },
+      ],
+    });
+
+    return response.results.map((page: any) => {
+      const props = page.properties;
+      return {
+        id: page.id,
+        notion_id: page.id,
+        name: extractText(props.Name?.title || []),
+        description: extractText(props.Description?.rich_text || []),
+        client_id: clientId,
+        status: extractSelect(props.Status)?.toLowerCase().replace(' ', '_') as Project['status'] || 'not_started',
+        priority: extractSelect(props.Priority)?.toLowerCase() as Project['priority'] || 'medium',
+        start_date: extractDate(props['Start Date']),
+        due_date: extractDate(props['Due Date']),
+        budget: extractNumber(props.Budget),
+        createdAt: new Date(page.created_time),
+        updatedAt: new Date(page.last_edited_time),
+      } as Project;
+    });
+  } catch (error) {
+    console.error('Error fetching projects from Notion:', error);
+    throw new Error('Failed to fetch projects from Notion');
+  }
+}
+
+/**
+ * Fetch tasks for a specific project from Notion
+ */
+export async function fetchTasksByProject(projectId: string): Promise<Task[]> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const response = await notion.databases.query({
+      database_id: TASKS_DATABASE_ID,
+      filter: {
+        property: 'Project',
+        relation: {
+          contains: projectId,
+        },
+      },
+      sorts: [
+        {
+          property: 'Due Date',
+          direction: 'ascending',
+        },
+      ],
+    });
+
+    return response.results.map((page: any) => {
+      const props = page.properties;
+      return {
+        id: page.id,
+        notion_id: page.id,
+        title: extractText(props.Name?.title || []),
+        description: extractText(props.Description?.rich_text || []),
+        project_id: projectId,
+        assignee: extractText(props.Assignee?.rich_text || []) || undefined,
+        status: extractSelect(props.Status)?.toLowerCase().replace(' ', '_') as Task['status'] || 'todo',
+        priority: extractSelect(props.Priority)?.toLowerCase() as Task['priority'] || 'medium',
+        due_date: extractDate(props['Due Date']),
+        estimated_hours: extractNumber(props['Estimated Hours']),
+        actual_hours: extractNumber(props['Actual Hours']),
+        tags: extractMultiSelect(props.Tags),
+        createdAt: new Date(page.created_time),
+        updatedAt: new Date(page.last_edited_time),
+      } as Task;
+    });
+  } catch (error) {
+    console.error('Error fetching tasks from Notion:', error);
+    throw new Error('Failed to fetch tasks from Notion');
+  }
+}
+
+/**
+ * Fetch all tasks for a specific client (across all their projects)
+ */
+export async function fetchTasksByClient(clientId: string): Promise<Task[]> {
+  try {
+    // First, get all projects for this client
+    const projects = await fetchProjectsByClient(clientId);
+    const projectIds = projects.map(p => p.id);
+
+    if (projectIds.length === 0) {
+      return [];
+    }
+
+    // Then fetch tasks for all those projects
+    const taskPromises = projectIds.map(projectId => fetchTasksByProject(projectId));
+    const taskArrays = await Promise.all(taskPromises);
+    
+    // Flatten the arrays and add project info to tasks
+    const allTasks = taskArrays.flat();
+    
+    return allTasks.map(task => ({
+      ...task,
+      project: projects.find(p => p.id === task.project_id),
+    }));
+  } catch (error) {
+    console.error('Error fetching client tasks from Notion:', error);
+    throw new Error('Failed to fetch client tasks from Notion');
+  }
+}
+
+/**
+ * Update a task in Notion
+ */
+export async function updateTask(taskId: string, updates: Partial<Task>): Promise<boolean> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const properties: any = {};
+
+    if (updates.title) {
+      properties.Name = {
+        title: [{ text: { content: updates.title } }],
+      };
+    }
+
+    if (updates.description) {
+      properties.Description = {
+        rich_text: [{ text: { content: updates.description } }],
+      };
+    }
+
+    if (updates.status) {
+      properties.Status = {
+        select: { name: updates.status.replace('_', ' ') },
+      };
+    }
+
+    if (updates.priority) {
+      properties.Priority = {
+        select: { name: updates.priority },
+      };
+    }
+
+    if (updates.assignee) {
+      properties.Assignee = {
+        rich_text: [{ text: { content: updates.assignee } }],
+      };
+    }
+
+    if (updates.due_date) {
+      properties['Due Date'] = {
+        date: { start: updates.due_date.toISOString().split('T')[0] },
+      };
+    }
+
+    if (updates.estimated_hours !== undefined) {
+      properties['Estimated Hours'] = {
+        number: updates.estimated_hours,
+      };
+    }
+
+    if (updates.actual_hours !== undefined) {
+      properties['Actual Hours'] = {
+        number: updates.actual_hours,
+      };
+    }
+
+    if (updates.tags) {
+      properties.Tags = {
+        multi_select: updates.tags.map(tag => ({ name: tag })),
+      };
+    }
+
+    await notion.pages.update({
+      page_id: taskId,
+      properties,
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error updating task in Notion:', error);
+    return false;
+  }
+}
+
+/**
+ * Create a new task in Notion
+ */
+export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'notion_id'>): Promise<string | null> {
+  if (!notion) {
+    throw new Error('Notion client not initialized');
+  }
+  try {
+    const response = await notion.pages.create({
+      parent: { database_id: TASKS_DATABASE_ID },
+      properties: {
+        Name: {
+          title: [{ text: { content: task.title } }],
+        },
+        Description: task.description ? {
+          rich_text: [{ text: { content: task.description } }],
+        } : undefined,
+        Project: {
+          relation: [{ id: task.project_id }],
+        },
+        Status: {
+          select: { name: task.status.replace('_', ' ') },
+        },
+        Priority: {
+          select: { name: task.priority },
+        },
+        Assignee: task.assignee ? {
+          rich_text: [{ text: { content: task.assignee } }],
+        } : undefined,
+        'Due Date': task.due_date ? {
+          date: { start: task.due_date.toISOString().split('T')[0] },
+        } : undefined,
+        'Estimated Hours': task.estimated_hours ? {
+          number: task.estimated_hours,
+        } : undefined,
+        Tags: task.tags.length > 0 ? {
+          multi_select: task.tags.map(tag => ({ name: tag })),
+        } : undefined,
+      },
+    });
+
+    return response.id;
+  } catch (error) {
+    console.error('Error creating task in Notion:', error);
+    return null;
+  }
+}
