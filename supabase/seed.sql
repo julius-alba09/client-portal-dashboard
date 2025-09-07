@@ -1,0 +1,32 @@
+-- This file will run after the initial schema is applied
+-- It creates sample data for development and testing
+
+-- Insert sample workspace (you'll need to replace the owner_id with actual user id after auth)
+INSERT INTO workspaces (id, name, notion_workspace_id, owner_id) VALUES
+  ('123e4567-e89b-12d3-a456-426614174000', 'Demo Workspace', null, null);
+
+-- Insert sample clients
+INSERT INTO clients (id, workspace_id, name, email, company, avatar, status, notion_id) VALUES
+  ('223e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', 'John Smith', 'john@techcorp.com', 'Tech Corp', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face', 'active', 'notion_client_1'),
+  ('323e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', 'Sarah Johnson', 'sarah@designstudio.com', 'Creative Design Studio', 'https://images.unsplash.com/photo-1494790108755-2616b9d95e1a?w=400&h=400&fit=crop&crop=face', 'active', 'notion_client_2'),
+  ('423e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', 'Michael Chen', 'michael@startupventures.io', 'Startup Ventures', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face', 'pending', 'notion_client_3');
+
+-- Insert sample projects
+INSERT INTO projects (id, workspace_id, client_id, name, description, status, priority, start_date, due_date, budget, notion_id) VALUES
+  ('523e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', 'Website Redesign', 'Complete overhaul of the company website with modern design and improved UX', 'in_progress', 'high', '2024-01-20', '2024-04-15', 15000.00, 'notion_project_1'),
+  ('623e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', 'Mobile App Development', 'Native iOS and Android app for customer engagement', 'not_started', 'medium', '2024-04-01', '2024-08-30', 45000.00, 'notion_project_2'),
+  ('723e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', '323e4567-e89b-12d3-a456-426614174000', 'Brand Identity Package', 'Complete brand identity design including logo, colors, and guidelines', 'in_progress', 'high', '2024-02-15', '2024-03-30', 8000.00, 'notion_project_3'),
+  ('823e4567-e89b-12d3-a456-426614174000', '123e4567-e89b-12d3-a456-426614174000', '423e4567-e89b-12d3-a456-426614174000', 'MVP Development', 'Minimum viable product development for the startup', 'on_hold', 'urgent', '2024-03-15', '2024-06-01', 25000.00, 'notion_project_4');
+
+-- Insert sample tasks
+INSERT INTO tasks (id, workspace_id, client_id, project_id, title, description, assignee, status, priority, due_date, estimated_hours, actual_hours, tags, notion_id) VALUES
+  ('923e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', '523e4567-e89b-12d3-a456-426614174000', 'Conduct user research and analysis', 'Interview existing users and analyze current website analytics', 'Alice Cooper', 'done', 'high', '2024-02-01 00:00:00+00', 16, 18, '{"research", "ux"}', 'notion_task_1'),
+  ('a23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', '523e4567-e89b-12d3-a456-426614174000', 'Create wireframes and mockups', 'Design initial wireframes for all key pages', 'Bob Designer', 'in_progress', 'high', '2024-03-15 00:00:00+00', 24, 12, '{"design", "wireframes"}', 'notion_task_2'),
+  ('b23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', '523e4567-e89b-12d3-a456-426614174000', 'Develop responsive navigation', 'Implement responsive navigation component', 'Carol Developer', 'todo', 'medium', '2024-03-20 00:00:00+00', 12, null, '{"development", "frontend"}', 'notion_task_3'),
+  ('c23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '223e4567-e89b-12d3-a456-426614174000', '523e4567-e89b-12d3-a456-426614174000', 'Set up CMS integration', 'Configure headless CMS for content management', 'Dave Backend', 'review', 'medium', '2024-03-25 00:00:00+00', 20, 22, '{"development", "backend", "cms"}', 'notion_task_4'),
+  ('d23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '323e4567-e89b-12d3-a456-426614174000', '723e4567-e89b-12d3-a456-426614174000', 'Brand strategy workshop', 'Conduct workshop with stakeholders to define brand direction', 'Emma Brand', 'done', 'high', '2024-02-20 00:00:00+00', 8, 10, '{"branding", "strategy"}', 'notion_task_5'),
+  ('e23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '323e4567-e89b-12d3-a456-426614174000', '723e4567-e89b-12d3-a456-426614174000', 'Logo design concepts', 'Create 3-5 initial logo concepts for client review', 'Frank Designer', 'in_progress', 'high', '2024-03-10 00:00:00+00', 16, 8, '{"design", "logo"}', 'notion_task_6'),
+  ('f23e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '323e4567-e89b-12d3-a456-426614174000', '723e4567-e89b-12d3-a456-426614174000', 'Color palette development', 'Develop comprehensive color palette with accessibility considerations', 'Grace Color', 'todo', 'medium', '2024-03-12 00:00:00+00', 6, null, '{"design", "colors"}', 'notion_task_7'),
+  ('023e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '423e4567-e89b-12d3-a456-426614174000', '823e4567-e89b-12d3-a456-426614174000', 'Technical architecture planning', 'Define system architecture and technology stack', 'Henry Architect', 'blocked', 'urgent', '2024-03-20 00:00:00+00', 24, null, '{"architecture", "planning"}', 'notion_task_8'),
+  ('123e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '423e4567-e89b-12d3-a456-426614174000', '823e4567-e89b-12d3-a456-426614174000', 'Database schema design', 'Design and implement initial database schema', 'Ivy Database', 'todo', 'high', '2024-03-25 00:00:00+00', 16, null, '{"database", "backend"}', 'notion_task_9'),
+  ('223e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174000', '423e4567-e89b-12d3-a456-426614174000', '823e4567-e89b-12d3-a456-426614174000', 'User authentication system', 'Implement secure user authentication and authorization', 'Jack Security', 'todo', 'high', '2024-04-01 00:00:00+00', 20, null, '{"security", "authentication"}', 'notion_task_10');

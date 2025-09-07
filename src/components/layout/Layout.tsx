@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { Client } from '@/types';
@@ -11,19 +11,23 @@ interface LayoutProps {
   projectName?: string;
 }
 
-export default function Layout({ children, client, projectName }: LayoutProps) {
+const Layout = memo(function Layout({ children, client, projectName }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Memoized callbacks to prevent unnecessary re-renders
+  const handleSidebarClose = useCallback(() => setSidebarOpen(false), []);
+  const handleMenuClick = useCallback(() => setSidebarOpen(true), []);
 
   return (
     <div className="h-screen flex bg-white dark:bg-gray-950">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar isOpen={sidebarOpen} onClose={handleSidebarClose} />
       
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top navbar */}
         <Navbar 
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={handleMenuClick}
           client={client}
           projectName={projectName}
         />
@@ -37,4 +41,6 @@ export default function Layout({ children, client, projectName }: LayoutProps) {
       </div>
     </div>
   );
-}
+});
+
+export default Layout;

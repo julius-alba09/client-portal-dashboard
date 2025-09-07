@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
+import PerformanceDashboard from '@/components/performance/PerformanceDashboard';
 import { AuthGuard } from '@/contexts/AuthContext';
 import { 
   CheckCircleIcon, 
@@ -300,6 +301,9 @@ function SettingsPage() {
               Manage your integrations and preferences
             </p>
           </div>
+
+          {/* Performance Dashboard */}
+          <PerformanceDashboard showAdvanced={true} />
 
           {/* Alerts */}
           {error && (

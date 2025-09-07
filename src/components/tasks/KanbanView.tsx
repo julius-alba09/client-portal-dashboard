@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useCallback, memo } from 'react';
 import { Task, KanbanColumn } from '@/types';
 import { format } from 'date-fns';
 import { CalendarIcon, UserIcon, ClockIcon } from '@heroicons/react/24/outline';
@@ -12,41 +12,44 @@ interface KanbanViewProps {
   onTaskDelete: (taskId: string) => void;
 }
 
+// Memoized constants to prevent recreation on every render
 const columns: KanbanColumn[] = [
   { id: 'todo', title: 'To Do', tasks: [], color: 'bg-gray-100 dark:bg-gray-700' },
   { id: 'in_progress', title: 'In Progress', tasks: [], color: 'bg-blue-100 dark:bg-blue-900' },
   { id: 'review', title: 'Review', tasks: [], color: 'bg-yellow-100 dark:bg-yellow-900' },
   { id: 'done', title: 'Done', tasks: [], color: 'bg-green-100 dark:bg-green-900' },
   { id: 'blocked', title: 'Blocked', tasks: [], color: 'bg-red-100 dark:bg-red-900' },
-];
+] as const;
 
 const priorityColors = {
   low: 'border-l-gray-300',
   medium: 'border-l-blue-400',
   high: 'border-l-orange-400',
   urgent: 'border-l-red-500'
-};
+} as const;
 
-export default function KanbanView({ tasks, onTaskUpdate, onTaskDelete }: KanbanViewProps) {
-  const getTasksByStatus = (status: Task['status']) => {
+const KanbanView = memo(function KanbanView({ tasks, onTaskUpdate, onTaskDelete }: KanbanViewProps) {
+  // Memoized task filtering by status
+  const getTasksByStatus = useCallback((status: Task['status']) => {
     return tasks.filter(task => task.status === status);
-  };
+  }, [tasks]);
 
-  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
     e.dataTransfer.setData('text/plain', taskId);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent, newStatus: Task['status']) => {
+  const handleDrop = useCallback((e: React.DragEvent, newStatus: Task['status']) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData('text/plain');
     onTaskUpdate(taskId, { status: newStatus });
-  };
+  }, [onTaskUpdate]);
 
-  const TaskCard = ({ task }: { task: Task }) => (
+  // Memoized TaskCard component to prevent unnecessary re-renders
+  const TaskCard = memo(({ task }: { task: Task }) => (
     <div
       draggable
       onDragStart={(e) => handleDragStart(e, task.id)}
@@ -145,51 +148,54 @@ export default function KanbanView({ tasks, onTaskUpdate, onTaskDelete }: Kanban
         )}
       </div>
     </div>
-  );
+  ));
+
+  // Memoized columns with their tasks to prevent unnecessary re-filtering
+  const columnsWithTasks = useMemo(() => {
+    return columns.map(column => ({
+      ...column,
+      columnTasks: getTasksByStatus(column.id)
+    }));
+  }, [getTasksByStatus]);
 
   return (
     <div className="flex space-x-6 overflow-x-auto pb-6">
-      {columns.map((column) => {
-        const columnTasks = getTasksByStatus(column.id);
-        
-        return (
-          <div
-            key={column.id}
-            className="flex-shrink-0 w-80"
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              {/* Column header */}
-              <div className={clsx('px-4 py-3 rounded-t-lg', column.color)}>
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-900 dark:text-white">
-                    {column.title}
-                  </h3>
-                  <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-full">
-                    {columnTasks.length}
-                  </span>
-                </div>
-              </div>
-
-              {/* Column content */}
-              <div
-                className="p-4 min-h-[500px]"
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, column.id)}
-              >
-                {columnTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
-                ))}
-
-                {columnTasks.length === 0 && (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                    No {column.title.toLowerCase()} tasks
-                  </div>
-                )}
+      {columnsWithTasks.map(({ id, title, color, columnTasks }) => (
+        <div key={id} className="flex-shrink-0 w-80">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+            {/* Column header */}
+            <div className={clsx('px-4 py-3 rounded-t-lg', color)}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                  {title}
+                </h3>
+                <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-700 rounded-full">
+                  {columnTasks.length}
+                </span>
               </div>
             </div>
+
+            {/* Column content */}
+            <div
+              className="p-4 min-h-[500px]"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, id)}
+            >
+              {columnTasks.map((task) => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+
+              {columnTasks.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                  No {title.toLowerCase()} tasks
+                </div>
+              )}
+            </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
-}
+});
+
+export default KanbanView;

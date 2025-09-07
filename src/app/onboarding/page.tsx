@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { CheckIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import clsx from 'clsx';
 import AccountSetup from '@/components/onboarding/AccountSetup';
@@ -70,6 +71,7 @@ const steps = [
 ];
 
 export default function OnboardingPage() {
+  const { user, isLoading } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('account');
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({
     firstName: '',
@@ -82,6 +84,42 @@ export default function OnboardingPage() {
   });
 
   const router = useRouter();
+
+  // Pre-populate user data from auth context
+  useEffect(() => {
+    if (user) {
+      setOnboardingData(prev => ({
+        ...prev,
+        firstName: user.name?.split(' ')[0] || '',
+        lastName: user.name?.split(' ').slice(1).join(' ') || '',
+        email: user.email,
+      }));
+    }
+  }, [user]);
+
+  // Redirect to signin if not authenticated
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push('/auth/signin');
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Loading...
+          </h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect via useEffect
+  }
 
   const updateOnboardingData = (updates: Partial<OnboardingData>) => {
     setOnboardingData(prev => ({

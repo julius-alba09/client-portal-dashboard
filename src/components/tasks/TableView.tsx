@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import { ChevronUpIcon, ChevronDownIcon, CalendarIcon, UserIcon } from '@heroicons/react/24/outline';
 import { Task, TaskSort } from '@/types';
 import { format } from 'date-fns';
@@ -12,46 +12,51 @@ interface TableViewProps {
   onTaskDelete: (taskId: string) => void;
 }
 
+// Memoized constants to prevent recreation on every render
 const statusColors = {
   todo: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
   in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   review: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
   done: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
   blocked: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-};
+} as const;
 
 const priorityColors = {
   low: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
   medium: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
   high: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
   urgent: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-};
+} as const;
 
-export default function TableView({ tasks, onTaskUpdate, onTaskDelete }: TableViewProps) {
+const TableView = memo(function TableView({ tasks, onTaskUpdate, onTaskDelete }: TableViewProps) {
   const [sort, setSort] = useState<TaskSort>({ field: 'due_date', direction: 'asc' });
 
-  const handleSort = (field: keyof Task) => {
+  const handleSort = useCallback((field: keyof Task) => {
     setSort(prev => ({
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }));
-  };
+  }, []);
 
-  const sortedTasks = [...tasks].sort((a, b) => {
-    const aValue = a[sort.field];
-    const bValue = b[sort.field];
-    
-    if (aValue === undefined || aValue === null) return 1;
-    if (bValue === undefined || bValue === null) return -1;
-    
-    let comparison = 0;
-    if (aValue < bValue) comparison = -1;
-    if (aValue > bValue) comparison = 1;
-    
-    return sort.direction === 'desc' ? -comparison : comparison;
-  });
+  // Memoized sorted tasks to prevent unnecessary re-sorts
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => {
+      const aValue = a[sort.field];
+      const bValue = b[sort.field];
+      
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+      
+      let comparison = 0;
+      if (aValue < bValue) comparison = -1;
+      if (aValue > bValue) comparison = 1;
+      
+      return sort.direction === 'desc' ? -comparison : comparison;
+    });
+  }, [tasks, sort.field, sort.direction]);
 
-  const SortButton = ({ field, children }: { field: keyof Task; children: React.ReactNode }) => (
+  // Memoized SortButton component to prevent unnecessary re-renders
+  const SortButton = memo(({ field, children }: { field: keyof Task; children: React.ReactNode }) => (
     <button
       onClick={() => handleSort(field)}
       className="flex items-center space-x-1 text-left font-medium text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400"
@@ -65,7 +70,7 @@ export default function TableView({ tasks, onTaskUpdate, onTaskDelete }: TableVi
         )
       )}
     </button>
-  );
+  ));
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -215,4 +220,6 @@ export default function TableView({ tasks, onTaskUpdate, onTaskDelete }: TableVi
       )}
     </div>
   );
-}
+});
+
+export default TableView;
